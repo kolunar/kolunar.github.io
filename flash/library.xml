@@ -1,0 +1,14 @@
+<node>
+	<node label="Lunar">
+		<node label="My Album">
+			<node label="Disk 1">
+
+				<node label="Song One" src="song1.mp3" artist="Lunar" album="My Album" track="1" length="0:14" cover="images/cover.jpg" />
+				<node label="Song Two" src="song2.mp3" artist="Lunar" album="My Album" track="2" length="0:08" cover="images/cover2.jpg" />
+				<node label="Song Three" src="song3.mp3" artist="Lunar" album="My Album" track="3" length="0:08" cover="images/cover3.jpg" />
+
+
+			</node>
+		</node>
+	</node>
+</node>
