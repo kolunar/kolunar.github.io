@@ -1,0 +1,103 @@
+	body {
+		background-color: #EFEFEF;
+        margin: 0px;
+        padding: 0px;
+	}
+	canvas {
+		position: absolute;
+		z-index: 1;
+	}
+	div#container {
+		position: absolute;
+		left: -1024px;
+		width: 1024px;
+		height: 100%;
+	}
+	div#ipane {
+		position: fixed;
+		z-index: 0;
+		top: 0;
+		right: 0;
+		width: 0;
+		height: 100%;
+		border-left: 1px solid gray;
+	}
+	.bgShadow {
+		background-color: #EAEAEA;
+		-webkit-box-shadow: -2px 2px 2px 1px rgba(120, 150, 180, 0.2);
+		-moz-box-shadow: -2px 2px 2px 1px rgba(120, 150, 180, 0.2);
+		box-shadow: -2px 2px 2px 1px rgba(120, 150, 180, 0.2);	
+	}
+	div#itext {
+		position: absolute;
+		top: 50px;
+		left: 10px;
+		min-width: 290px;
+		height: 50px;
+	}
+	div#ilog {
+		position: absolute;
+		top: 100px;
+		left: 10px;
+		min-width: 280px;
+		max-width: 290px;
+		height: 450px;
+		overflow: auto;
+		padding: 5px;		
+		background-color: white;
+		border:1px solid gray;	
+		font-size: 12px;
+	}
+	div#reset {
+		position: absolute;
+		bottom: 50px;
+		left: 180px;
+		width: 100px;
+		height: 40px;
+		line-height: 40px;
+		background-color: #AEAEAE;
+		text-align: center;
+		border: 1px solid #EFEFEF;
+		border-radius: 3px;
+		cursor: pointer;
+		text-shadow:-1px 1px 1px #FFFFFF;
+		-webkit-box-shadow:0 4px 8px -4px #555;
+		   -moz-box-shadow:0 4px 8px -4px #555;
+				box-shadow:0 4px 8px -4px #555;
+				
+	}
+	div#reset:hover {
+		color: #111;
+		background-color: #BEBEBE;
+		text-shadow:1px 1px 1px #FFFFFF;
+		-webkit-box-shadow:0 4px 8px -4px black;
+		   -moz-box-shadow:0 4px 8px -4px black;
+				box-shadow:0 4px 8px -4px black;		
+	}
+	div#handle {
+		position: absolute;
+		top: 0;
+		left: -41px;
+		width: 40px;
+		height: 40px;
+		border-left: 1px solid gray;
+		border-bottom: 1px solid gray;
+		cursor: pointer;
+	}
+	div#handle:hover{
+		background-color: #EFEFEF;
+	}
+	div#handle span{
+		display: inline-block;
+		margin: 7px;	
+	}
+	div#handle span.slidein {
+		border-top: 12px solid transparent;
+		border-bottom: 12px solid transparent;
+		border-right: 10px solid gray;
+	}
+	div#handle span.slideout {
+		border-top: 12px solid transparent;
+		border-bottom: 12px solid transparent;
+		border-left: 10px solid gray;
+	}	

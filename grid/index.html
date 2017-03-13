@@ -1,0 +1,477 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+	<link type="text/css" rel="stylesheet" href="css/style.css">   
+    <style>
+	
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>	
+    <script src="js/kinetic-v4.6.0.js"></script>
+	<script src="js/jquery.js"></script>
+    <script>
+		function log1(group,b){
+			//console.log('groupX:'+(group.getX()+group._offsetH)+', groupY:'+(group.getY()+group.getAttr('_offsetH')));
+		}
+		function log2(outline){
+			//console.log('outlineX:'+outline.x+', outlineY:'+outline.y);
+		}
+		function doLog(str,clear){
+			$("#ilog").html(clear?"":$("#ilog").html()+str+" <br />");
+		}
+		function toggleSideBar(b){
+			$('#ipane').animate({
+                width: b?'300px':'0'
+            }, 400);
+		}
+		/*
+		 * Create side bar to the right for logging
+		 */
+		$(document).ready(function(){
+			var els = "<div id='ipane' class='bgShadow'><div id='reset'>Reset</div><div id='handle' class='bgShadow'><span class='slideout'></span></div><div id='itext'></div><div id='ilog'></div></div>";
+			$('body').append(els);		
+			$('#container').animate({
+                left: '0'
+            }, 500);	
+			toggleSideBar(true);
+			$('#handle').click(function(){
+				toggleSideBar($(this).children("span").attr("class")=='slideout'?false:true);
+				$(this).children("span").toggleClass('slideout slidein');				
+			});
+		});
+		/*
+		 * Implement Enter key press
+		 */
+		$(document).keypress(function(e) {
+			if(e.which == 13&& cornerDetected) {
+				alert('Corner is detected!');
+			}
+		});	
+		var validCornerCount = 0;
+		var cornerDetected = false;
+		var hasInvalidCorner = false;
+		function doCorner(){
+			$("#itext").html(cornerDetected?"Corner is detected! Valid Count:"+validCornerCount:"XXX XXX XXX");
+		}	
+		/*
+		 * mapping one piece against other pieces recursively
+		 * pieces (3,2,1) -> (3,2), (3,1), (2,1)
+		 *				  -> (3,(2.1,2.2)), (3,(1.1)), (2,(1.1)) 
+		 * 				  -> ((3.1,(2.1,2.2)),(3.2,(2.1,2.2)),(3.3,(2.1,2.2))) , ((3.1,(1.1)),(3.2,(1.1)),(3.3,(1.1))) , ((2.1,(1.1)),(2.2,(1.1)))
+		 */
+		function checkCornerRecursively(pieces, n){
+			if(n==pieces.length){
+				doLog("",true);
+				validCornerCount = 0;
+				cornerDetected = false;
+			}
+			if(n==0){
+				doCorner();
+				return;		
+			}
+			n--;			
+			for(var i=0;i<n;i++){
+				isCornerDetected(pieces[n], pieces, i);
+			}
+			checkCornerRecursively(pieces, n);
+		}		
+		/*
+		 * Mapping one rect against another rect of other pieces, this will proceed until the end of the above recursive loop
+		 */		
+		function isCornerDetected(piece, pieces, i){
+			if(piece.isAttachedToGrid && piece._id != pieces[i]._id && pieces[i].onGrid){ //loop only pieces on the Grid and escaping same id
+				doLog("<span style='color:"+piece.getAttr("name")+"'>"+piece.getAttr("name")+"Piece</span>:<span style='color:"+pieces[i].getAttr("name")+"'>"+pieces[i].getAttr("name")+"Piece</span>",false);		
+
+				var rects1 = piece.getChildren();
+				var rects2 = pieces[i].getChildren();
+				var isValid = false;					
+				loop: for(var j=0;j<rects1.length;j++){
+					for(var k=0;k<rects2.length;k++){
+						doLog("<span style='color:"+rects1[j].getAttr("fill")+"'>rect"+j+"</span>:<span style='color:"+rects2[k].getAttr("fill")+"'>rect"+k+"</span>",false);
+						isValid = detectCorner(rects1[j], rects2[k], isValid);
+						if(hasInvalidCorner)
+							break loop;
+					}
+				}
+				if(isValid)
+					validCornerCount++;
+			}
+			if(validCornerCount > 0)
+				cornerDetected = true;			
+		}
+		
+		var ts = 20;//Threshold for corner detection
+		function detectCorner(rect1, rect2, isValid){
+			hasInvalidCorner = false;		
+			var r1X1 = Math.round(rect1.getAbsolutePosition().x);
+			var r1X2 = r1X1 + 100;
+			var r1Y1 = Math.round(rect1.getAbsolutePosition().y);
+			var r1Y2 = r1Y1 + 100;
+
+			var r2X1 = Math.round(rect2.getAbsolutePosition().x);
+			var r2X2 = r2X1 + 100;
+			var r2Y1 = Math.round(rect2.getAbsolutePosition().y);
+			var r2Y2 = r2Y1 + 100;		
+
+			//Checking adjacents
+			if(((r1X2>=r2X1-ts && r1X2<=r2X1+ts) && (r1Y1>=r2Y1-ts && r1Y1<=r2Y1+ts))			//(r1X2,r1Y1) vs (r2X1,r2Y1) //1000
+			 ||((r1X1>=r2X1-ts && r1X1<=r2X1+ts) && (r1Y2>=r2Y1-ts && r1Y2<=r2Y1+ts))			//(r1X1,r1Y2) vs (r2X1,r2Y1) //0100
+			 ||((r1X1>=r2X2-ts && r1X1<=r2X2+ts) && (r1Y1>=r2Y1-ts && r1Y1<=r2Y1+ts))			//(r1X1,r1Y1) vs (r2X2,r2Y1) //0010
+			 ||((r1X1>=r2X1-ts && r1X1<=r2X1+ts) && (r1Y1>=r2Y2-ts && r1Y1<=r2Y2+ts))){			//(r1X1,r1Y1) vs (r2X1,r2Y2) //0001
+				hasInvalidCorner = true;
+				isValid = false;	
+				doLog("...Invalid",false);
+			}
+			//Checking corners
+			if(!hasInvalidCorner){
+				if(((r1X1>=r2X2-ts && r1X1<=r2X2+ts) && (r1Y1>=r2Y2-ts && r1Y1<=r2Y2+ts))		//(r1X1,r1Y1) vs (r2X2,r2Y2) //0011
+				 ||((r1X2>=r2X1-ts && r1X2<=r2X1+ts) && (r1Y2>=r2Y1-ts && r1Y2<=r2Y1+ts))		//(r1X2,r1Y2) vs (r2X1,r2Y1) //1100				
+				 ||((r1X1>=r2X2-ts && r1X1<=r2X2+ts) && (r1Y2>=r2Y1-ts && r1Y2<=r2Y1+ts))		//(r1X1,r1Y2) vs (r2X2,r2Y1) //0110
+				 ||((r1X2>=r2X1-ts && r1X2<=r2X1+ts) && (r1Y1>=r2Y2-ts && r1Y1<=r2Y2+ts))){		//(r1X2,r1Y1) vs (r2X1,r2Y2) //1001
+					isValid = true;	
+					doLog("...Valid",false);					
+				}
+			}
+			return isValid;
+		}
+		
+		/*
+		 * Check if one piece is overlapping another piece
+		 */
+		function isCollided(piece, pieces){
+			var status = false;
+			for(var i=0;i<pieces.length;i++){
+				if(piece._id != pieces[i]._id && pieces[i].onGrid && pieces[i].isAttachedToGrid){ //loop only pieces on the Grid and escaping same id
+					var rects1 = piece.getChildren();
+					var rects2 = pieces[i].getChildren();
+					for(var j=0;j<rects1.length;j++){
+						for(var k=0;k<rects2.length;k++){
+							if(colliding(rects1[j], rects2[k])){
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		var of = 20;//Offset for colliding
+		function colliding(rect1, rect2)
+		{
+			var status = false;			
+			var r1X1 = Math.round(rect1.getAbsolutePosition().x);
+			var r1X2 = r1X1 + 100;
+			var r1Y1 = Math.round(rect1.getAbsolutePosition().y);
+			var r1Y2 = r1Y1 + 100;
+
+			var r2X1 = Math.round(rect2.getAbsolutePosition().x);
+			var r2X2 = r2X1 + 100;
+			var r2Y1 = Math.round(rect2.getAbsolutePosition().y);
+			var r2Y2 = r2Y1 + 100;
+
+			if(r1X1==r2X1 && r1X2==r2X2 && r1Y1==r2Y1 && r1Y2==r2Y2)return true;
+			r1X1 += of;//offset
+			r1X2 -= of;
+			r1Y1 += of;
+			r1Y2 -= of;
+			
+			if((r1X1 > r2X1 && r1X1 < r2X2 && r1Y1 >= r2Y1 && r1Y1 < r2Y2)	//X1,Y1
+			 ||(r1X2 > r2X1 && r1X2 < r2X2 && r1Y1 >= r2Y1 && r1Y1 < r2Y2)	//X2,Y1
+			 ||(r1X2 > r2X1 && r1X2 < r2X2 && r1Y2 >= r2Y1 && r1Y2 < r2Y2)	//X2,Y2
+			 ||(r1X1 > r2X1 && r1X1 < r2X2 && r1Y2 >= r2Y1 && r1Y2 < r2Y2))	//X1,Y2
+				status = true;
+			
+			//console.log("index:"+rect1.getAttr('name')+" ("+r1X1+","+r1Y1+","+r1X2+","+r1Y2+")\n");
+			//console.log("index:"+rect2.getAttr('name')+" ("+r2X1+","+r2Y1+","+r2X2+","+r2Y2+")");
+			return status;
+		}
+		
+		/*
+		 * Snap to outline if within offset range of each x,y coordinate
+		 */
+		var sts = 30;//Threshold for snapTo
+		function isNearOutline(piece, outline) {
+			var ox = outline.x;
+			var oy = outline.y;
+			var ax = piece.getX() + piece._offsetW;
+			var ay = piece.getY() + piece._offsetH;
+			//log2(outline);
+			if(ax > ox - sts && ax < ox + sts && ay > oy - sts && ay < oy + sts) {
+			  return true;
+			}
+			else {
+			  return false;
+			}
+		}
+		/*
+		 * Initializing Stage
+		 */
+		function initStage() {
+			var stage = new Kinetic.Stage({
+				container: 'container',
+				width: 1024,
+				height: 640
+			});
+
+			var backLayer = new Kinetic.Layer();
+			var rectLayer = new Kinetic.Layer();
+			var gridRect = new Kinetic.Rect({
+				x: 400,
+				y: 100,
+				width: 500,
+				height: 500,
+				fill: '#AAA',
+				shadowColor:'#000',shadowBlur:3,shadowOffset:2,shadowOpacity:0.7
+			}); 
+			var score = 0;
+			var outlines_group = new Kinetic.Group({
+				x: 0,
+				y: 0				
+			});
+			var piece_group = new Kinetic.Group({
+				x: 0,
+				y: 0				
+			});	
+			backLayer.add(gridRect);
+			backLayer.add(outlines_group);
+			rectLayer.add(piece_group);
+			// Define rects positions
+			var rects = [];
+			for(var n = 1; n < 4; n++) {
+				rects['_'+n] = {x: (n==3)?200:(100 * (n)), y: (n==3)?200:100};
+			}
+			var outlines = [];
+			var hX = gridRect.getX(),vY = gridRect.getY();
+			for(var n = 1; n < 26; n++) {
+				outlines['black_'+n] = {x: hX, y: vY};
+				hX += 100;
+				if(n%5==0){
+					vY+=100;
+					hX=gridRect.getX();
+				}				
+			}
+
+			// Create draggable rects
+			var gH = 0;
+			for(var n = 1; n < 4; n++) {
+				// anonymous function to induce scope
+				(function() {
+					var gW = 100;
+					var gY = 100;
+					var c = n;
+					var privKey = '_'+n;
+					var posR = rects['_1'];
+					//var dragHandle = false;
+					var piece = new Kinetic.Group({
+						name: c==1?"red":c==2?"green":"blue",
+						inRightPlace: false,
+						isAttachedToGrid: false,
+						onGrid: false,
+						draggable: true,
+						dragHandle: false,
+						oldX: 0,
+						oldY: 0,	
+						/*
+						 * Limit x and y within minimum and maximum coordinates
+						 */
+						dragBoundFunc: function(pos) {
+							if(!this.dragHandle)return{x:0,y:0};
+							var offsetY = this._offsetH;
+							var minY = 110-offsetY;
+							var maxY = c == 3 ? 80 : 510 - offsetY;
+							var maxX = c > 1 ? 600 : 700;				
+							//console.log("c:"+c+",x:"+pos.x+",y:"+pos.y+",oY:"+offsetY+",minY:"+minY+",maxY:"+maxY);
+							var newx = pos.x < 300 ? 300 : pos.x && pos.x > maxX ? maxX : pos.x
+							var newy = pos.y < minY ? minY : pos.y && pos.y > maxY ? maxY : pos.y
+							return{
+								x:newx,
+								y:newy
+							}
+						}
+					});
+					piece.setStroke = function(str){
+						var rects = this.getChildren();
+						for(var i=0;i<rects.length;i++){
+							rects[i].setStroke(str);
+						}						
+					};
+					piece.setShadow = function(shadow){
+						var rects = this.getChildren();
+						for(var i=0;i<rects.length;i++){
+							rects[i].setShadowColor(shadow.shadowColor);
+							rects[i].setShadowBlur(shadow.shadowBlur);
+							rects[i].setShadowOffset(shadow.shadowOffset);
+							rects[i].setShadowOpacity(shadow.shadowOpacity);							
+						}					
+					}
+					piece.setAbsolutePosition(0,0);
+					/*
+					 * Create children for piece 1,2 and 3
+					 */
+					var rect = new Kinetic.Rect({
+						name: 'rect'+c,
+						x: posR.x,
+						y: posR.y + gH,
+						width: 100,
+						height: 100,
+						shadowColor:'#000',shadowBlur:5,shadowOffset:5,shadowOpacity:0.4,
+						fill: c==1?"red":c==2?"green":"blue",
+						stroke: 'black',					
+						draggable: false
+					});
+					piece.add(rect);					
+					for(var m = 2; m < n+1; m++){
+						var _posR = rects['_'+m];
+						var _rect = new Kinetic.Rect({
+							name: 'rect'+(c+m-1),
+							x: _posR.x,
+							y: _posR.y + gH,
+							width: 100,
+							height: 100,	
+							shadowColor:'#000',shadowBlur:5,shadowOffset:5,shadowOpacity:0.4,
+							fill: c==1?"red":c==2?"green":"blue",
+							stroke: 'black',						
+							draggable: false
+						});	
+						if(m==2)gW += 100;
+						gY += 110;
+						piece.add(_rect);						
+					}
+					gH+=110;
+					piece._offsetW = gW;
+					piece._offsetH = gH;
+					/*
+					 * check if rect is in the right spot and
+					 * snap into place if it is
+					 */
+					piece.on('dragend', function() {
+						this.inRightPlace = false;					
+						if(!this.dragHandle)return;
+						for(var i = 1; i < 26; i++) {
+							var outline = outlines['black_'+i];
+							if(isNearOutline(piece, outline)) {
+								if(!isCollided(piece,piece_group.getChildren())){
+									this.inRightPlace = true;
+									this.isAttachedToGrid = true;
+									this.moveToBottom();
+									piece.setPosition(this.oldX = outline.x - gW, this.oldY = outline.y - gY); //snap
+									piece.setShadow({shadowColor:'#333',shadowBlur:0,shadowOffset:0,shadowOpacity:0});
+									rectLayer.draw();
+									checkCornerRecursively(piece_group.getChildren(), piece_group.getChildren().length);							
+								}
+								break;
+							}						
+						}
+						if(!this.inRightPlace){
+							new Kinetic.Tween({ //if not in the right place, move back to its previous position
+								node: piece, 
+								duration: .2,
+								easing: Kinetic.Easings.EaseOut,
+								x: this.oldX,
+								y: this.oldY,
+								onFinish: function() {
+									piece.inRightPlace = true;
+									if(piece.isAttachedToGrid)
+										piece.setShadow({shadowColor:'#333',shadowBlur:0,shadowOffset:0,shadowOpacity:0});
+									checkCornerRecursively(piece_group.getChildren(), piece_group.getChildren().length);
+								}
+							}).play();					
+						}						
+					});
+					// style rect glow on mouseover
+					piece.on('mouseover mouseup', function() {
+						this.setStroke("yellow");
+						rectLayer.draw();
+						document.body.style.cursor = 'pointer';
+					});
+					// style rect border and cursor on mouseleave
+					piece.on('mouseleave', function() {
+						this.setStroke("black");
+						rectLayer.draw();
+						document.body.style.cursor = 'default';
+					});
+					// style rect border and cursor on mousedown
+					piece.on('mousedown', function() {
+						this.setStroke("cyan");
+						this.moveToTop();
+						rectLayer.draw();
+						document.body.style.cursor = 'default';
+					});
+					// style rect border, shadow and cursor on dragstart					
+					piece.on('dragstart', function() {
+						if(!this.dragHandle)return;
+						this.setShadow({shadowColor:'#000',shadowBlur:5,shadowOffset:8,shadowOpacity:0.5});					
+						rectLayer.draw();						
+						document.body.style.cursor = 'move';
+					});
+					piece_group.add(piece);	
+					/*
+					 * implement click handler for going to center of the grid
+					 */
+					piece.on('click', function() {
+						validCornerCount = 0;					
+						cornerDetected = false;
+						this.isAttachedToGrid = false;
+						this.setShadow({shadowColor:'#000',shadowBlur:5,shadowOffset:8,shadowOpacity:0.5});
+						rectLayer.draw();						
+						new Kinetic.Tween({
+							node: piece, 
+							duration: .5,
+							easing: Kinetic.Easings.EaseOut,
+							x: piece.oldX = 500 - (50*((gW/100)-1)),
+							y: piece.oldY = (500/2)-gY+(c<3?50:0),
+							onFinish: function(){
+								piece.onGrid = true;
+							}
+						}).play();
+						this.dragHandle = true;
+					});
+				})();
+			}
+
+			// Create rect outlines
+			for(var key in outlines) {
+			  // Anonymous function to induce scope
+			  (function() {
+				var out = outlines[key];
+				var outline = new Kinetic.Rect({
+					x: out.x,
+					y: out.y,
+					width: 100,
+					height: 100,
+					stroke: '#111',
+					shadowColor:'#000',shadowBlur:2,shadowOffset:1,shadowOpacity:0.5
+				});
+				outlines_group.add(outline);
+			  })();
+			}
+			stage.add(backLayer);
+			stage.add(rectLayer);
+			/*
+			 * Reset all objects and properties
+			 */
+			jQuery(document).on("mousedown", "#reset",function(){
+				$("#ilog").html("");
+				$("#itext").html("");
+				for(var i=0;i<piece_group.getChildren().length;i++){
+					piece_group.getChildren()[i].inRightPlace = false;
+					piece_group.getChildren()[i].isAttachedToGrid = false;
+					piece_group.getChildren()[i].onGrid = false;
+					piece_group.getChildren()[i].dragHandle	= false;			
+					piece_group.getChildren()[i].setShadow({shadowColor:'#000',shadowBlur:5,shadowOffset:5,shadowOpacity:0.4});
+					new Kinetic.Tween({
+						node: piece_group.getChildren()[i], 
+						duration: .2,
+						easing: Kinetic.Easings.EaseOut,
+						x: 0,
+						y: 0,
+					}).play();
+				}
+				rectLayer.draw();
+			});			
+		}
+		initStage();
+    </script>
+  </body>
+</html>
