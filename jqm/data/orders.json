@@ -1,0 +1,29 @@
+{
+	"result": "true",
+	"header": {
+		"sk": "101",
+		"status": 0,
+		"total": 100,
+		"tblNo": "TBL1",
+		"chkNo": "CHK0001"
+	},
+	"details": [{
+		"sk": "190",
+		"psk": "001",
+		"type": 1,
+		"desc": "Menu0",
+		"price": 123.00
+	}, {
+		"sk": "261",
+		"psk": "013",
+		"type": 1,
+		"desc": "Menu71",
+		"price": 123.00
+	}, {
+		"sk": "262",
+		"psk": "013",
+		"type": 1,
+		"desc": "Menu72",
+		"price": 123.00
+	}]
+}
